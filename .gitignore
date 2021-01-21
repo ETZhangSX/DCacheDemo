@@ -1,0 +1,5 @@
+*.d
+*.o
+Proxy.h
+ProxyShare.h
+CacheShare.h

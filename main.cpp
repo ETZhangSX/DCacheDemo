@@ -99,10 +99,14 @@ void testKKRow(DCache::ProxyPrx prx)
 
     string mainKey = "Key";
     map<string, string> data;
-    data["UID"] = "test";
+    data["UID"] = "test1";
     data["VALUE"] = "hello";
-
     testInsertMKV(mainKey, data, prx);
+
+    data["UID"] = "test2";
+    data["VALUE"] = "hey";
+    testInsertMKV(mainKey, data, prx);
+
     testGetMKV(mainKey, prx);
 
     cout << END << " testKKRow" << endl;
@@ -166,6 +170,7 @@ void printVectorMapData(const vector<map<string, string>> &data)
 {
     for (auto item : data)
     {
+        cout << '\t' << SUBTEST_PREFIX;
         printMapData(item);
     }
 }
@@ -226,7 +231,7 @@ void testInsertMKV(const string &mainKey, const map<string, string> &data, DCach
 
 void testGetMKV(const string &key, DCache::ProxyPrx prx)
 {
-    cout << SUBTEST_PREFIX << "getMKV    ";
+    cout << SUBTEST_PREFIX << "getMKV    " << endl;
 
     // 构造请求
     DCache::GetMKVReq req;

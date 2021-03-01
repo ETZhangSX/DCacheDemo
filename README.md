@@ -1,6 +1,6 @@
 # DCacheDemo
 
-DCache 使用示例，包含了 `key-value`, `k-k-row`, `set`, `list` 的使用示例。
+DCache 使用示例，包含了 `key-value`, `k-k-row`, `list`, `set`, `zset` 的使用示例。
 
 具体使用方式可以查阅 `main.cpp` 中的使用方式。
 
@@ -19,8 +19,9 @@ DCache 使用示例，包含了 `key-value`, `k-k-row`, `set`, `list` 的使用�
     // 缓存模块名
     static string ModuleTestDemoKV    = "TestDemoKV";
     static string ModuleTestDemoKKRow = "TestDemoKKRow";
-    static string ModuleTestDemoSet   = "TestDemoSet";
     static string ModuleTestDemoList  = "TestDemoList";
+    static string ModuleTestDemoSet   = "TestDemoSet";
+    static string ModuleTestDemoZSet  = "TestDemoZSet";
     ```
 - 修改配置文件 `config.conf`，修改主控 IP 为你自己 TARS 部署的机器 IP，配置文件内容如下
 

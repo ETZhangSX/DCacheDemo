@@ -18,14 +18,16 @@ static string DCacheTestDemoObj = "DCache.TestDemoProxyServer.ProxyObj";
 // 缓存模块名
 static string ModuleTestDemoKV    = "TestDemoKV";
 static string ModuleTestDemoKKRow = "TestDemoKKRow";
-static string ModuleTestDemoSet   = "TestDemoSet";
 static string ModuleTestDemoList  = "TestDemoList";
+static string ModuleTestDemoSet   = "TestDemoSet";
+static string ModuleTestDemoZSet  = "TestDemoZSet";
 
 // 测试
 void testKV(DCache::ProxyPrx prx);
 void testKKRow(DCache::ProxyPrx prx);
-void testSet(DCache::ProxyPrx prx);
 void testList(DCache::ProxyPrx prx);
+void testSet(DCache::ProxyPrx prx);
+void testZSet(DCache::ProxyPrx prx);
 
 // KV 读写测试
 void testSetKV(const string &key, const string &value, DCache::ProxyPrx prx);
@@ -35,13 +37,17 @@ void testGetKV(const string &key, DCache::ProxyPrx prx);
 void testInsertMKV(const string &mainKey, const map<string, string> &data, DCache::ProxyPrx prx);
 void testGetMKV(const string &mainKey, DCache::ProxyPrx prx);
 
+// List 读写测试
+void testPushList(const string &mainKey, const vector<map<string, string>> &data, DCache::ProxyPrx prx);
+void testGetList(const string &mainKey, const long &index, DCache::ProxyPrx prx);
+
 // Set 读写测试
 void testAddSet(const string &mainKey, const map<string, string> &data, DCache::ProxyPrx prx);
 void testGetSet(const string &mainKey, DCache::ProxyPrx prx);
 
-// List 读写测试
-void testPushList(const string &mainKey, const vector<map<string, string>> &data, DCache::ProxyPrx prx);
-void testGetList(const string &mainKey, const long &index, DCache::ProxyPrx prx);
+// ZSet 读写测试
+void testAddZSet(const string &mainKey, const map<string, string> &data, const double &score, DCache::ProxyPrx prx);
+void testGetZSet(const string &mainKey, DCache::ProxyPrx prx);
 
 // 生成更新数据结构 UpdateValue
 DCache::UpdateValue genUpdateValue(DCache::Op op, const string &value);
@@ -68,8 +74,9 @@ int main(int argc, char *argv[])
 
         testKV(prx);
         testKKRow(prx);
-        testSet(prx);
         testList(prx);
+        testSet(prx);
+        testZSet(prx);
     }
     catch (exception &e)
     {
@@ -98,32 +105,18 @@ void testKKRow(DCache::ProxyPrx prx)
     cout << START << " testKKRow" << endl;
 
     string mainKey = "Key";
-    map<string, string> data;
-    data["UID"] = "test1";
-    data["VALUE"] = "hello";
-    testInsertMKV(mainKey, data, prx);
+    map<string, string> data1, data2;
+    data1["UID"] = "test1";
+    data1["VALUE"] = "hello";
+    data2["UID"] = "test2";
+    data2["VALUE"] = "hey";
 
-    data["UID"] = "test2";
-    data["VALUE"] = "hey";
-    testInsertMKV(mainKey, data, prx);
+    testInsertMKV(mainKey, data1, prx);
+    testInsertMKV(mainKey, data2, prx);
 
     testGetMKV(mainKey, prx);
 
     cout << END << " testKKRow" << endl;
-}
-
-void testSet(DCache::ProxyPrx prx)
-{
-    cout << START << " testSet" << endl;
-
-    string mainKey = "mainKey";
-    map<string, string> data;
-    data["VALUE"] = "hello";
-
-    testAddSet(mainKey, data, prx);
-    testGetSet(mainKey, prx);
-
-    cout << END << " testSet" << endl;
 }
 
 void testList(DCache::ProxyPrx prx)
@@ -143,6 +136,53 @@ void testList(DCache::ProxyPrx prx)
     testGetList(mainKey, index, prx);
 
     cout << END << " testList" << endl;
+}
+
+void testSet(DCache::ProxyPrx prx)
+{
+    cout << START << " testSet" << endl;
+
+    string mainKey = "testKey";
+    map<string, string> data1, data2, data3, data4;
+    data1["VALUE"] = "hello";
+    data2["VALUE"] = "hello";
+    data3["VALUE"] = "hi";
+    data4["VALUE"] = "test";
+
+    testAddSet(mainKey, data1, prx);
+    testAddSet(mainKey, data2, prx);
+    testAddSet(mainKey, data3, prx);
+    testAddSet(mainKey, data4, prx);
+
+    testGetSet(mainKey, prx);
+
+    cout << END << " testSet" << endl;
+}
+
+void testZSet(DCache::ProxyPrx prx)
+{
+    cout << START << " testZSet" << endl;
+
+    string mainKey = "testKey";
+    map<string, string> data1, data2, data3, data4;
+    double score1, score2, score3, score4;
+    data1["VALUE"] = "hello";
+    score1 = 0.1;
+    data2["VALUE"] = "hello";
+    score2 = 0.1;
+    data3["VALUE"] = "hi";
+    score3 = 0.8;
+    data4["VALUE"] = "test";
+    score4 = 0.5;
+
+    testAddZSet(mainKey, data1, score1, prx);
+    testAddZSet(mainKey, data2, score2, prx);
+    testAddZSet(mainKey, data3, score3, prx);
+    testAddZSet(mainKey, data4, score4, prx);
+
+    testGetZSet(mainKey, prx);
+
+    cout << END << " testZSet" << endl;
 }
 
 DCache::UpdateValue genUpdateValue(DCache::Op op, const string &value)
@@ -245,55 +285,6 @@ void testGetMKV(const string &key, DCache::ProxyPrx prx)
     printVectorMapData(rsp.data);
 }
 
-void testAddSet(const string &mainKey, const map<string, string> &data, DCache::ProxyPrx prx)
-{
-    cout << SUBTEST_PREFIX << "addSet ";
-
-    // 构造请求
-    DCache::AddSetReq req;
-    req.moduleName = ModuleTestDemoSet;
-    req.value.mainKey = mainKey;
-    req.value.expireTime = time(NULL) + 60 * 60 * 24;
-
-    map<string, string>::const_iterator it = data.begin();
-    while (it != data.end())
-    {
-        req.value.data[it->first] = genUpdateValue(DCache::SET, it->second);
-        ++it;
-    }
-
-    int ret = prx->addSet(req);
-
-    if (ret == DCache::ET_SUCC)
-    {
-        printMapData(data);
-        return;
-    }
-    cout << "ret:" << ret << endl;
-}
-
-void testGetSet(const string &mainKey, DCache::ProxyPrx prx)
-{
-    cout << SUBTEST_PREFIX << "getSet ";
-
-    // 构造请求
-    DCache::GetSetReq req;
-    req.moduleName = ModuleTestDemoSet;
-    req.mainKey = mainKey;
-    req.field = "*";
-
-    DCache::BatchEntry rsp;
-    int ret = prx->getSet(req, rsp);
-
-    if (ret == DCache::ET_SUCC)
-    {
-        // 打印返回值
-        printVectorMapData(rsp.entries);
-        return;
-    }
-    cout << "ret:" << ret << endl;
-}
-
 void testPushList(const string &mainKey, const vector<map<string, string>> &data, DCache::ProxyPrx prx)
 {
     cout << SUBTEST_PREFIX << "pushList ";
@@ -344,6 +335,106 @@ void testGetList(const string &mainKey, const long &index, DCache::ProxyPrx prx)
     if (ret == DCache::ET_SUCC)
     {
         printMapData(rsp.entry.data);
+        return;
+    }
+    cout << "ret:" << ret << endl;
+}
+
+void testAddSet(const string &mainKey, const map<string, string> &data, DCache::ProxyPrx prx)
+{
+    cout << SUBTEST_PREFIX << "addSet ";
+
+    // 构造请求
+    DCache::AddSetReq req;
+    req.moduleName = ModuleTestDemoSet;
+    req.value.mainKey = mainKey;
+    req.value.expireTime = time(NULL) + 60 * 60 * 24;
+
+    map<string, string>::const_iterator it = data.begin();
+    while (it != data.end())
+    {
+        req.value.data[it->first] = genUpdateValue(DCache::SET, it->second);
+        ++it;
+    }
+
+    int ret = prx->addSet(req);
+
+    if (ret == DCache::ET_SUCC)
+    {
+        printMapData(data);
+        return;
+    }
+    cout << "ret:" << ret << endl;
+}
+
+void testGetSet(const string &mainKey, DCache::ProxyPrx prx)
+{
+    cout << SUBTEST_PREFIX << "getSet " << endl;
+
+    // 构造请求
+    DCache::GetSetReq req;
+    req.moduleName = ModuleTestDemoSet;
+    req.mainKey = mainKey;
+    req.field = "*";
+
+    DCache::BatchEntry rsp;
+    int ret = prx->getSet(req, rsp);
+
+    if (ret == DCache::ET_SUCC)
+    {
+        // 打印返回值
+        printVectorMapData(rsp.entries);
+        return;
+    }
+    cout << "ret:" << ret << endl;
+}
+
+void testAddZSet(const string &mainKey, const map<string, string> &data, const double &score, DCache::ProxyPrx prx)
+{
+    cout << SUBTEST_PREFIX << "addZSet ";
+
+    // 构造请求
+    DCache::AddZSetReq req;
+    req.moduleName = ModuleTestDemoZSet;
+    req.value.mainKey = mainKey;
+    req.score = score;
+
+    map<string, string>::const_iterator it = data.begin();
+    while (it != data.end())
+    {
+        req.value.data[it->first] = genUpdateValue(DCache::SET, it->second);
+        ++it;
+    }
+
+    int ret = prx->addZSet(req);
+
+    if (ret == DCache::ET_SUCC)
+    {
+        printMapData(data);
+        return;
+    }
+    cout << "ret:" << ret << endl;
+}
+
+void testGetZSet(const string &mainKey, DCache::ProxyPrx prx)
+{
+    cout << SUBTEST_PREFIX << "getZSet " << endl;
+
+    // 构造请求
+    DCache::GetZsetByPosReq req;
+    req.moduleName = ModuleTestDemoZSet;
+    req.mainKey = mainKey;
+    req.field = "*";
+    req.start = 0;
+    req.end = 3;
+
+    DCache::BatchEntry rsp;
+    int ret = prx->getZSetByPos(req, rsp);
+
+    if (ret == DCache::ET_SUCC)
+    {
+        // 打印返回值
+        printVectorMapData(rsp.entries);
         return;
     }
     cout << "ret:" << ret << endl;

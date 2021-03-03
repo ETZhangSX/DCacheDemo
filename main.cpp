@@ -126,7 +126,6 @@ void testList(DCache::ProxyPrx prx)
     string mainKey = "test";
     vector<map<string, string>> data;
     map<string, string> item;
-    // item["USERID"] = "test";
     item["VALUE"] = "test";
     data.push_back(item);
 
